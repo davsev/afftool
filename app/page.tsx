@@ -1,103 +1,78 @@
-import Image from "next/image";
+import Link from 'next/link'
+import { listFeatured, listMods } from '@/lib/mods'
+import { ModGrid } from '@/components/ModGrid'
+import { TerminalMock } from '@/components/TerminalMock'
+import { SEED_MODS } from '@/content/seed-mods'
 
-export default function Home() {
+export const revalidate = 300
+
+export default async function Home() {
+  const [featured, latest] = await Promise.all([listFeatured(), listMods({})])
+  const hero = SEED_MODS.find(m => m.slug === 'blast-shield') ?? SEED_MODS[0]
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <>
+      <section className="glow grain relative overflow-hidden">
+        <div className="mx-auto grid max-w-7xl items-center gap-12 px-4 pb-20 pt-16 sm:px-6 sm:pt-24 lg:grid-cols-[1.1fr_1fr]">
+          <div>
+            <p className="mb-6 inline-flex items-center gap-2 rounded-full border border-line bg-surface/70 px-3 py-1 font-mono text-xs text-muted">
+              <span className="size-1.5 rounded-full bg-ok" /> {latest.total} mods · free prompts
+            </p>
+            <h1 className="font-display text-5xl leading-[0.95] tracking-tight sm:text-7xl">
+              Prompts that build <em className="text-accent">Claude Code</em> mods.
+            </h1>
+            <p className="mt-6 max-w-xl text-lg text-muted">
+              Panes, bands, status lines and guards made by the community. Find one you like, copy its prompt,
+              paste it into Claude Code, and get your own version in minutes.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link href="/mods" className="rounded-full bg-fg px-6 py-3 font-medium text-bg hover:bg-white">
+                Browse mods
+              </Link>
+              <Link href="/submit" className="rounded-full border border-line px-6 py-3 hover:border-fg/40">
+                Share your mod
+              </Link>
+            </div>
+          </div>
+          <div className="relative">
+            <div className="absolute -inset-6 rounded-[2rem] bg-accent/10 blur-3xl" aria-hidden />
+            <div className="relative aspect-[16/11] overflow-hidden rounded-2xl border border-line shadow-2xl shadow-black/60">
+              <TerminalMock lines={hero.mock!.lines} surfaces={hero.surfaces} accent={hero.mock!.accent} large />
+            </div>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+      </section>
+
+      <section className="mx-auto max-w-7xl px-4 sm:px-6">
+        <ol className="grid gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-3">
+          {[
+            ['01', 'Pick a mod', 'Browse by where it shows: pane, band, status line, guard.'],
+            ['02', 'Copy the prompt', 'Every mod comes with a full build prompt. No repo needed.'],
+            ['03', 'Paste in Claude Code', 'Claude writes the mod with the plugin-authoring skill. Tweak it to taste.'],
+          ].map(([n, t, d]) => (
+            <li key={n} className="bg-surface p-6">
+              <span className="font-mono text-xs text-accent">{n}</span>
+              <h2 className="mt-2 font-medium">{t}</h2>
+              <p className="mt-1 text-sm text-muted">{d}</p>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      {featured.length > 0 && (
+        <section className="mx-auto mt-20 max-w-7xl px-4 sm:px-6">
+          <h2 className="mb-6 font-display text-3xl tracking-tight sm:text-4xl">Featured</h2>
+          <ModGrid mods={featured.slice(0, 3)} />
+        </section>
+      )}
+
+      <section className="mx-auto mt-20 max-w-7xl px-4 sm:px-6">
+        <div className="mb-6 flex items-end justify-between gap-4">
+          <h2 className="font-display text-3xl tracking-tight sm:text-4xl">Latest mods</h2>
+          <Link href="/mods" className="text-sm text-muted hover:text-fg">View all →</Link>
+        </div>
+        <ModGrid mods={latest.items.slice(0, 9)} />
+      </section>
+    </>
+  )
 }

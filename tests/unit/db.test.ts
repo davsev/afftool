@@ -56,7 +56,7 @@ describe('database rules', () => {
 
   it('shows authors their own pending mods', async () => {
     const r = await as(ALICE, `select slug from mods order by slug`)
-    expect(r.rows.map((x: any) => x.slug)).toEqual(['alice-live', 'alice-pending'])
+    expect((r.rows as { slug: string }[]).map(x => x.slug)).toEqual(['alice-live', 'alice-pending'])
   })
 
   it('blocks authors from publishing themselves', async () => {
@@ -109,4 +109,16 @@ describe('database rules', () => {
     await expect(as(BOB, `insert into storage.objects (bucket_id, name) values ('previews', $1)`, [`${ALICE}/a.mp4`]))
       .rejects.toThrow()
   })
+})
+
+describe('seed.sql', () => {
+  it('loads the 12 seed mods as published', async () => {
+    const fresh = new PGlite()
+    await fresh.exec(readFileSync('tests/db/supabase-stub.sql', 'utf8'))
+    await fresh.exec(readFileSync('supabase/migrations/0001_init.sql', 'utf8'))
+    await fresh.exec(readFileSync('supabase/seed.sql', 'utf8'))
+    const r = await fresh.query<{ n: number; cats: number }>(
+      `select count(*)::int as n, count(category_id)::int as cats from mods where status = 'published'`)
+    expect(r.rows[0]).toEqual({ n: 12, cats: 12 })
+  }, 60_000)
 })

@@ -378,3 +378,15 @@ create policy "upload own folder" on storage.objects for insert to authenticated
 
 - Spec coverage: gallery (T10-11), detail + copy/download (T12), auth (T6), submit (T13), likes/profile (T14), moderation (T15), guide (T16), SEO (T17), safety note (T12, T15), seed content (T7). Prompt variables, remix, premium are v2 and intentionally absent.
 - Types used across tasks: `ModInput` (T2) feeds `ModForm` and `submitMod` (T13); `SURFACES` drives `FilterBar` (T10) and DB `surfaces` column (T5).
+
+## Implementation notes (2026-10-06)
+
+Tasks 1-17 are built on branch `mod-prompt-library-plan`. Deviations from the plan:
+
+- Demo mode: with no Supabase env vars the site runs on `content/seed-mods.ts`, so it can be previewed and tested without a backend.
+- Database tests run the real migration in PGlite with a small Supabase stub (`tests/db/supabase-stub.sql`) instead of pgTAP, so no Docker is needed.
+- Card motion uses CSS keyframes instead of Framer Motion (one less dependency, same effect).
+- Seed previews are drawn by `TerminalMock` (an animated terminal frame per mod) until real recordings exist. Recording real previews from Task 7 step 3 is still open.
+- Nav user state and the like button load in the browser so public pages stay static.
+
+Still open: Task 18 (create the Supabase project, Vercel deploy, OAuth apps), real preview recordings, and per-IP rate limiting on `track_copy`.
