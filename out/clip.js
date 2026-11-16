@@ -85,6 +85,7 @@ const PS = { sky1: '#2a5fc0', sky2: '#ff9a4a', b: ['#c98b6e', '#b77a62', '#d89a7
 const SPR = {};
 const RIG = { hero: { hx: [100, 267], ny: 150 }, singer: { hx: [116, 263], ny: 180 }, drummer: { hx: [105, 239], ny: 187 }, bassist: { hx: [84, 211], ny: 167 } };
 function loadSprites() {
+  if (window.NO_SPRITES) return Promise.resolve();
   const names = ['hero', 'singer', 'drummer', 'bassist', 'drums', 'poster0', 'poster1', 'poster2', 'logo'];
   return Promise.all(names.map(n => new Promise(r => { const i = new Image(); i.onload = () => { SPR[n] = i; r(); }; i.onerror = () => r(); i.src = (typeof SPRITE_DATA !== 'undefined' && SPRITE_DATA[n]) || ('kit/' + n + '.png'); })));
 }
