@@ -2,7 +2,7 @@
 const W = 1280, H = 720, FPS = 24;
 const INK = '#16120f';
 const FONT = '"DejaVu Sans", "FreeSans", sans-serif';
-let c, ctx, F = 0, T = 0, BOIL = 0, K = 0, ENV = null, KD = [], SD = [];
+let c, ctx, F = 0, T = 0, BOIL = 0, K = 0, ENV = null, KD = [], SD = [], BP = 0;
 let GRAIN, HALF;
 
 // ---------- utils ----------
@@ -163,10 +163,10 @@ function man(o) {
   const neck = [up[0] * TL, up[1] * TL];
   const shL = [up[0] * (TL - 8) - 14 * fr, up[1] * (TL - 8)], shR = [up[0] * (TL - 8) + 14 * fr, up[1] * (TL - 8)];
   const hpL = [-8 * fr, 0], hpR = [8 * fr, 0];
-  const legL = o.fL ? ik(hpL, o.fL, TH, SH, -1) : limbA(hpL, ...(o.lL || [0.08, -0.05]), TH, SH);
-  const legR = o.fR ? ik(hpR, o.fR, TH, SH, 1) : limbA(hpR, ...(o.lR || [-0.08, -0.05]), TH, SH);
+  const legL = o.fL ? ik(hpL, o.fL, TH, SH, 1) : limbA(hpL, ...(o.lL || [0.08, -0.05]), TH, SH);
+  const legR = o.fR ? ik(hpR, o.fR, TH, SH, -1) : limbA(hpR, ...(o.lR || [-0.08, -0.05]), TH, SH);
   const armL = o.hL ? ik(shL, o.hL, UA, LA, o.bendL || 1) : limbA(shL, ...(o.aL || [0.15, 0.1]), UA, LA);
-  const armR = o.hR ? ik(shR, o.hR, UA, LA, o.bendR || -1) : limbA(shR, ...(o.aR || [-0.15, 0.1]), UA, LA);
+  const armR = o.hR ? ik(shR, o.hR, UA, LA, o.bendR || (fr ? -1 : 1)) : limbA(shR, ...(o.aR || [-0.15, 0.1]), UA, LA);
   const lw = 7, cl = o.shirt, pn = o.pants;
   const drawLimb = (L, col, full) => {
     if (col) { line(full ? L : L.slice(0, 2), 19, INK, 1.2); line(full ? L : L.slice(0, 2), 12, col, 0.8); }
@@ -219,23 +219,23 @@ function bandPose(kind, t, x, y, s, extra = {}) {
   const o = Object.assign({ kind, x, y, s, front: true, face: 1, mood: 'neutral' }, extra);
   if (kind === 'singer' || kind === 'bassist') {
     const bass = kind === 'bassist';
-    const strum = Math.sin(t * Math.PI * (bass ? 4 : 8)) * 8 * (0.4 + e);
+    const strum = Math.sin(BP * Math.PI * (bass ? 1 : 2)) * 8 * (0.4 + e);
     const ang = -0.38, len = bass ? 120 : 92;
     o.inst = bass ? 'bass' : 'guitar'; o.shirt = bass ? '#2b2b2b' : '#3d3d3d'; o.pants = '#2c3e5a';
     o.hL = [4 - Math.cos(ang) * len * (bass ? 0.62 : 0.68), -14 + Math.sin(ang) * len * 0.68 - 2]; o.bendL = -1;
-    o.hR = [16 + strum * 0.3, -6 + strum]; o.bendR = 1;
+    o.hR = [16 + strum * 0.3, -6 + strum]; o.bendR = -1;
     o.fL = [-26, 92]; o.fR = [26, 92];
-    o.hT = Math.sin(t * Math.PI * 4) * 0.08 * (0.5 + e) + k * 0.12;
+    o.hT = Math.sin(BP * Math.PI) * 0.08 * (0.5 + e) + k * 0.12;
     o.bob = -k * 6;
     if (!bass) { o.mouth = clamp(e * 1.2 - 0.25); o.mood = 'neutral'; }
   }
   if (kind === 'drummer') {
     o.shirt = '#7a1f1f'; o.pants = '#2b2b2b';
-    const L = Math.max(0, Math.sin(t * Math.PI * 8)), R = sn;
+    const L = Math.max(0, Math.sin(BP * Math.PI * 4)), R = sn;
     o.hL = [-34 + L * 4, 0 - 22 * (1 - k)]; o.hR = [34, 4 - 30 * (1 - Math.min(1, R * 1.5))]; o.bendL = 1; o.bendR = -1;
     o.sticks = [-0.6 - L * 0.4, 0.6 + (1 - R) * 0.5];
     o.lL = [0.9, -0.9]; o.lR = [-0.9, 0.9];
-    o.hT = k * 0.15 * Math.sin(t * 7); o.bob = -k * 5;
+    o.hT = 0.1 * Math.sin(BP * Math.PI); o.bob = -k * 5;
   }
   man(o);
 }
@@ -262,7 +262,7 @@ function cloud(x, y, s, fill = '#fff') {
   ctx.restore();
 }
 function plane(x, y, s, rot = 0, alpha = 1) {
-  ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x, y); ctx.scale(s, s); ctx.rotate(rot);
+  ctx.save(); ctx.globalAlpha = alpha; ctx.translate(x, y); ctx.scale(-s, s); ctx.rotate(-rot);
   poly([[-10, -4], [-40, -70], [-26, -72], [22, -6]], '#e9edf2', 4); // far wing
   poly([[-10, 4], [-40, 70], [-26, 72], [22, 6]], '#e9edf2', 4);
   poly([[-78, 0], [-90, -26], [-82, -26], [-62, -2]], '#e9edf2', 4); poly([[-78, 0], [-90, 26], [-82, 26], [-62, 2]], '#e9edf2', 4);
@@ -310,12 +310,12 @@ function busStop(x, y, col = '#7b8b92') {
   line([[x + 250, y], [x + 250, y - 200]], 5); rect(x + 236, y - 236, 28, 36, '#2f6db3', 3); text('🚌', x + 250, y - 218, 16, '#fff');
 }
 function car(x, y, s, col, honk = 0) {
-  ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+  ctx.save(); ctx.translate(x, y); ctx.scale(-s, s);
   poly([[-120, -10], [-118, -48], [-70, -52], [-44, -92], [50, -92], [80, -54], [122, -46], [124, -10]], col, 5);
   rect(-34, -84, 40, 30, '#9cc3d5', 3); rect(12, -84, 36, 30, '#9cc3d5', 3);
   circ(-70, -8, 22, '#2a2a2a', 5); circ(-70, -8, 9, '#aaa', 3); circ(76, -8, 22, '#2a2a2a', 5); circ(76, -8, 9, '#aaa', 3);
   ctx.restore();
-  if (honk > 0) { burst(x + 140 * s, y - 120 * s, 46 * honk, '#ffd43b', 10); text('טוּט!', x + 140 * s, y - 120 * s, 22 * honk, INK); }
+  if (honk > 0) { burst(x - 140 * s, y - 120 * s, 46 * honk, '#ffd43b', 10); text('טוּט!', x - 140 * s, y - 120 * s, 22 * honk, INK); }
 }
 function wires(scroll, y, n = 2) {
   for (let i = 0; i < n; i++) { ctx.beginPath(); ctx.moveTo(-200, y + i * 14); ctx.quadraticCurveTo(W / 2, y + 40 + i * 14, W + 200, y + i * 14 - 6); ctx.lineWidth = 2; ctx.strokeStyle = INK; ctx.stroke(); }
@@ -422,17 +422,36 @@ function street(scroll, P, opt = {}) {
 
 // ---------- subtitles ----------
 const LYR = [
-  [0.6, 7.4, 'זהו סיפור פשוט על יום ראשון בבוקר'], [7.6, 14.6, 'עולה על מדים לפני שמתעורר'],
-  [15.2, 18.8, 'חצי שעה של נסיעה'], [18.9, 22.3, 'ויום שלם של הצגה'], [22.4, 25.9, 'אך זה בסדר כי אני כבר מתרגל'],
-  [26.2, 34.4, 'יצאתי מהבית וזה מה שראיתי'], [34.5, 42.8, 'עולם שלם פוליטיקאים וזונות'],
-  [43.1, 47.9, 'יש חיילים בכל מקום'], [48.0, 52.8, 'ומדברים על השלום'], [52.9, 57.4, 'ואם אתה טיפה שונה אז אין לך מקום'],
-  [57.7, 62.8, 'אבל הרמתי מבט וראיתי'], [62.9, 67.8, 'שמיים כחולים'], [67.9, 72.9, 'בשמיים ראיתי מטוס בין העננים'],
-  [73.2, 78.6, 'הוא רחוק מאיתנו'], [78.7, 84.0, 'אותו כמעט לא רואים'], [84.1, 90.4, 'ואנחנו חולמים להיות שם בפנים'], [90.5, 94.8, 'וואו…'],
-  [135.2, 143.0, 'שנים חולפות להן בדרך אל האושר'], [143.1, 150.8, 'הם מתחלפים ושום דבר לא משתנה'],
-  [151.2, 156.4, 'חוזר הביתה מאוחר'], [156.5, 161.6, 'כי זה כל מה שלי נשאר'], [161.7, 166.8, 'לחשוב שיום אחד יהיה כאן טוב'],
-  [167.2, 174.0, 'יהיה כאן טוב'], [174.1, 181.0, 'ולאהוב'], [181.1, 188.8, 'כן כן יהיה כאן טוב'],
-  [189.2, 194.8, 'אבל הרמתי מבט וראיתי'], [194.9, 200.0, 'שמיים כחולים'], [200.1, 206.4, 'בשמיים ראיתי מטוס בין העננים'], [206.5, 211.8, 'הוא רחוק מאיתנו'],
-  [212.0, 216.5, 'ואנחנו חולמים…'],
+  [0.8, 5.95, 'זהו סיפור פשוט על יום ראשון בבוקר'],
+  [6.1, 11.95, 'עולה על מדים לפני שמתעורר'],
+  [12.1, 14.85, 'חצי שעה של נסיעה'],
+  [15.0, 18.05, 'ויום שלם של הצגה'],
+  [18.2, 24.35, 'אך זה בסדר כי אני כבר מתרגל'],
+  [24.5, 30.15, 'יצאתי מהבית וזה מה שראיתי'],
+  [30.3, 35.95, 'עולם שלם פוליטיקאים וזונות'],
+  [36.1, 38.95, 'יש חיילים בכל מקום'],
+  [39.1, 42.05, 'ומדברים על השלום'],
+  [42.2, 48.15, 'ואם אתה טיפה שונה אז אין לך מקום'],
+  [48.3, 50.55, 'אבל הרמתי מבט וראיתי'],
+  [50.7, 53.95, 'שמיים כחולים'],
+  [54.1, 59.95, 'בשמיים ראיתי מטוס בין העננים'],
+  [60.1, 61.55, 'הוא רחוק מאיתנו'],
+  [61.7, 65.95, 'אותו כמעט לא רואים'],
+  [66.1, 70.95, 'ואנחנו חולמים להיות שם בפנים'],
+  [71.1, 78.0, 'וואו…'],
+  [138.1, 143.95, 'שנים חולפות להן בדרך אל האושר'],
+  [144.1, 149.95, 'הם מתחלפים ושום דבר לא משתנה'],
+  [150.1, 152.85, 'חוזר הביתה מאוחר'],
+  [153.0, 155.95, 'כי זה כל מה שלי נשאר'],
+  [156.1, 160.65, 'לחשוב שיום אחד יהיה כאן טוב'],
+  [160.8, 164.35, 'יהיה כאן טוב'],
+  [164.5, 170.35, 'ולאהוב'],
+  [170.5, 177.5, 'כן כן יהיה כאן טוב'],
+  [183.2, 185.55, 'אבל הרמתי מבט וראיתי'],
+  [185.7, 189.35, 'שמיים כחולים'],
+  [189.5, 195.05, 'בשמיים ראיתי מטוס בין העננים'],
+  [195.2, 201.35, 'הוא רחוק מאיתנו'],
+  [201.5, 208.5, 'ואנחנו חולמים…'],
 ];
 function subtitles() {
   for (const [a, b, s] of LYR) {
@@ -570,7 +589,7 @@ function shot04(t, d) {
   const hx = lerp(80, 480, ease(seg(t, 0, 3.6)) * 0 + seg(t, 0, 3.6)) + (t > 3.6 ? 0 : 0);
   const squeeze = seg(t, 4.0, 5.0);
   if (t < 4.9) {
-    const wp = walkPose(t * 14, 1.6);
+    const wp = walkPose(BP * Math.PI, 1.6);
     man(Object.assign({}, HERO, wp, { x: hx + squeeze * 90, y: standY(600, 1.2), s: 1.2, tA: 0.3, mood: 'shout', sx: 1 - squeeze * 0.6 }));
   }
   // crowd blobs in door
@@ -601,7 +620,7 @@ function shot05(t, d) {
   if (t > 1.6 && t < d - 0.8) { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); for (let i = 0; i < 3; i++) { const a = seg(t, 1.6 + i * .2, 2.3 + i * .2); if (a > 0) text('✦', 300 + i * 340, 90 + Math.sin(t * 5 + i) * 6, 40, '#ffd43b'); } ctx.restore(); }
 }
 function heroWalk(t, scroll, sx, s = 1.15, extra = {}) {
-  const wp = walkPose(scroll / 19, 1);
+  const wp = walkPose(BP * Math.PI / 2, 1);
   man(Object.assign({}, HERO, wp, { x: sx, y: standY(600, s), s, mood: 'tired', hT: 0.05 }, extra));
 }
 function shot06(t, d) {
@@ -652,12 +671,12 @@ function shot09(t, d) {
   street(scroll, PV, {});
   // soldiers at bus stop (1350 world)
   const bx = 1350 - scroll;
-  for (let i = 0; i < 3; i++) man(Object.assign({}, UNI, { kind: 'extra', x: bx + 50 + i * 60, y: standY(580, 1), s: 1, face: i === 1 ? -1 : 1, hat: 'beret', bag: true, mood: 'neutral', aL: [0.1, 0.3 + 0.2 * Math.sin(t * 2 + i)], aR: [-0.1 + (i === 2 ? -2.2 : 0), i === 2 ? -0.6 : 0.2], hT: Math.sin(t + i) * 0.05 }));
+  for (let i = 0; i < 3; i++) man(Object.assign({}, UNI, { kind: 'extra', x: bx + 50 + i * 60, y: standY(580, 1), s: 1, face: i === 1 ? -1 : 1, hat: 'beret', bag: true, mood: 'neutral', aL: [0.1, 0.3 + 0.2 * Math.sin(t * 2 + i)], aR: [-0.1 + (i === 2 ? 2.4 : 0), i === 2 ? 0.7 : 0.2], hT: Math.sin(t + i) * 0.05 }));
   // arguing pair
   const ax = 900 - t * 40;
   const g1 = Math.sin(t * 7), g2 = Math.sin(t * 7 + 2);
-  man({ kind: 'extra', x: ax, y: standY(590, 1.05), s: 1.05, face: 1, mood: 'shout', hat: 'hair', shirt: '#9a4f4f', pants: '#333', aL: [-1.8 - g1 * .5, -0.6], aR: [-1.2 + g1 * .6, -0.8], tA: 0.1 });
-  man({ kind: 'extra', x: ax + 110, y: standY(590, 1.05), s: 1.05, face: -1, mood: 'shout', hat: 'cap', hatc: '#2f6db3', shirt: '#4f6f8f', pants: '#333', aL: [-1.6 - g2 * .5, -0.5], aR: [-2.2 + g2 * .4, 0.4], tA: 0.1 });
+  man({ kind: 'extra', x: ax, y: standY(590, 1.05), s: 1.05, face: 1, mood: 'shout', hat: 'hair', shirt: '#9a4f4f', pants: '#333', aL: [1.7 + g1 * .5, 0.6], aR: [1.2 - g1 * .5, 0.9], tA: 0.1 });
+  man({ kind: 'extra', x: ax + 110, y: standY(590, 1.05), s: 1.05, face: -1, mood: 'shout', hat: 'cap', hatc: '#2f6db3', shirt: '#4f6f8f', pants: '#333', aL: [1.6 + g2 * .5, 0.6], aR: [2.2 - g2 * .4, 0.5], tA: 0.1 });
   bubble(ax + 55, 330, 150, 70, ax + 55, 380, '#fff', true); text('!!?#!', ax + 55, 330, 26, INK, { dir: 'ltr' });
   // newspaper stand
   const nx = 620 - t * 60; rect(nx, 470, 120, 130, '#7a5a3a', 4); for (let i = 0; i < 3; i++) { rect(nx + 8 + i * 38, 480, 34, 46, '#f0ede4', 2); for (let l = 0; l < 4; l++) line([[nx + 12 + i * 38, 492 + l * 8], [nx + 38 + i * 38, 492 + l * 8]], 1.5); }
@@ -689,7 +708,7 @@ function shot10(t, d) {
   // window glare
   ctx.save(); ctx.globalAlpha = 0.18; ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(200 + t * 40, 40); ctx.lineTo(320 + t * 40, 40); ctx.lineTo(120 + t * 40, 680); ctx.lineTo(0 + t * 40, 680); ctx.fill(); ctx.restore();
   // hero reflection silhouette passing
-  ctx.save(); ctx.globalAlpha = 0.14; heroWalk(t, t * 120, lerp(1300, -100, t / d), 2.4, { mood: 'tired' }); ctx.restore();
+  ctx.save(); ctx.globalAlpha = 0.14; heroWalk(t, t * 120, lerp(1300, -100, t / d), 2.4, { mood: 'tired', face: -1 }); ctx.restore();
 }
 function shot11(t, d) {
   const z = lerp(1.5, 0.75, ease(t / d));
@@ -704,10 +723,10 @@ function shot11(t, d) {
   const sitters = [0, 1, 2];
   sitters.forEach(i => {
     const x = bx + 50 + i * lerp(110, 75, shrink) + shrink * 10;
-    man({ kind: 'extra', x, y: 538, s: 0.95, face: 1, lL: [-1.4, 1.4], lR: [-1.35, 1.35], tA: -0.05 + Math.sin(t * 2 + i) * .03, hat: ['cap', 'long', 'hair'][i], hatc: ['#c22a24', '#6b3b1f', '#444'][i], shirt: ['#8f6f4f', '#4f6f8f', '#9a4f4f'][i], pants: '#334', aL: [0.6, 0.4], aR: [0.5, 0.5], mood: 'neutral' });
+    man({ kind: 'extra', x, y: 538, s: 0.95, face: 1, lL: [1.4, -1.4], lR: [1.35, -1.35], tA: -0.05 + Math.sin(t * 2 + i) * .03, hat: ['cap', 'long', 'hair'][i], hatc: ['#c22a24', '#6b3b1f', '#444'][i], shirt: ['#8f6f4f', '#4f6f8f', '#9a4f4f'][i], pants: '#334', aL: [0.6, 0.4], aR: [0.5, 0.5], mood: 'neutral' });
   });
   const hx = lerp(150, 420, ease(seg(t, 0, 1.6)));
-  const wp = t < 1.6 ? walkPose(t * 10, 1) : {};
+  const wp = t < 1.6 ? walkPose(BP * Math.PI / 2, 1) : {};
   man(Object.assign({}, HERO, wp, { x: hx, y: standY(600, 1.15), s: 1.15, face: 1, mood: 'tired', tA: t > 1.6 && t < 2.6 ? -0.2 * (1 - seg(t, 2.2, 2.6)) : 0 }));
 }
 function shot12(t, d) {
@@ -784,7 +803,7 @@ function shot16(t, d) {
     ell(820, 330, 222, 272, 0, null, 6);
     // seat + hero sitting looking out
     rect(170, 220, 160, 420, '#2f6db3', 6);
-    man(Object.assign({}, HERO, { x: 360, y: 470, s: 1.5, face: 1, tA: 0.1, lL: [-1.5, 1.4], lR: [-1.45, 1.4], mood: 'calm', hT: 0.05, aL: [-0.8, -1.4], aR: [-0.5, -1.6], bag: false }));
+    man(Object.assign({}, HERO, { x: 360, y: 470, s: 1.5, face: 1, tA: 0.1, lL: [1.5, -1.4], lR: [1.45, -1.4], mood: 'calm', hT: 0.05, aL: [0.4, 1.1], aR: [0.6, 1.0], bag: false }));
     ctx.restore();
   }
 }
@@ -800,7 +819,7 @@ function shot17(t, d) {
   cam(2.2, 470, 420, -0.04 + Math.sin(t * 2) * 0.02, kick() * 0.8);
   bandPose('singer', t, 440, standY(680, 1.6), 1.6, {});
   // strum ink trail
-  const st = Math.sin(t * Math.PI * 8);
+  const st = Math.sin(BP * Math.PI * 2);
   line([[470, 440 + st * 30], [530, 420 + st * 40]], 4 + rms() * 6, INK);
   if (split > 0) { ctx.setTransform(1, 0, 0, 1, 0, 0); const L = 1400 * split; line([[-40, 730], [-40 + L, 730 - L * 0.57]], 18, INK, 1); }
 }
@@ -820,9 +839,9 @@ function shot18(t, d) {
   poster(px, py, 200, 284, 2, 'הפעם באמת', 0.05 + Math.sin(t * 6) * 0.04, 0.4);
   poly([[px + 200, py], [px + 200 - 60 - Math.sin(t * 8) * 20, py], [px + 200, py + 60 + Math.sin(t * 8) * 20]], '#e9e5d8', 4);
   ctx.restore();
-  const sway = Math.sin(t * Math.PI * 2 * 0.5) * 60;
-  cam(1.9, 900 + sway, 420, Math.sin(t * Math.PI) * 0.05, kick() * 0.7);
-  bandPose('bassist', t, 900, standY(660, 1.45), 1.45, { hT: Math.sin(t * 8) * 0.15 });
+  const sway = Math.sin(BP * Math.PI / 2) * 60;
+  cam(1.9, 900 + sway, 420, Math.sin(BP * Math.PI / 2) * 0.05, kick() * 0.7);
+  bandPose('bassist', t, 900, standY(660, 1.45), 1.45, { hT: Math.sin(BP * Math.PI) * 0.15 });
 }
 function shot19(t, d) {
   soloBg(t, '#2b5cd6', '#e23b2e', '#f4c21b');
@@ -831,7 +850,7 @@ function shot19(t, d) {
   ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
   for (let j = 0; j < 6; j++) { const f = F - j * 4; const kk = KD[f] || 0, ss = SD[f] || 0; const r = j * 90 + ((T * 24) % 4) * 22; if (kk > 0.5) { ctx.globalAlpha = 0.6 * (1 - j / 6); circ(640, 420, r + 60, null, 18 * kk, INK); } if (ss > 0.5) { ctx.globalAlpha = 0.7 * (1 - j / 6); circ(640, 300, r + 40, null, 14, '#ffd43b'); } }
   ctx.restore();
-  const close = Math.floor(t / 1.25) % 2;
+  const close = Math.floor(BP / 4) % 2;
   cam(close ? 2.1 : 1.45, 640, close ? 420 : 470, 0, k * 0.9);
   drumKit(640, 520, 1.0, t);
   bandPose('drummer', t, 640, 470, 1.0, {});
@@ -856,7 +875,7 @@ function shot20(t, d) {
   ctx.restore();
   const hx = corner ? lerp(-80, 500, ease(seg(t, 5, 7.8))) : 420;
   const run = !(corner && t > 7.8);
-  man(Object.assign({}, HERO, run ? walkPose(t * 15, 1.6) : {}, { x: hx, y: standY(610, 1.2), s: 1.2, tA: run ? 0.3 : 0, mood: run ? 'shout' : 'neutral', face: 1, hT: run ? 0 : Math.sin(t * 6) * 0.2 }));
+  man(Object.assign({}, HERO, run ? walkPose(BP * Math.PI, 1.6) : {}, { x: hx, y: standY(610, 1.2), s: 1.2, tA: run ? 0.3 : 0, mood: run ? 'shout' : 'neutral', face: 1, hT: run ? 0 : Math.sin(t * 6) * 0.2 }));
   if (t > 4.8 && t < 5.2) flash(1 - Math.abs(t - 5) / 0.2, '0,0,0');
   if (!run) text('?!', hx + 60, 330, 60, INK, { dir: 'ltr', outline: 6, oc: '#fff' });
 }
@@ -916,7 +935,7 @@ function shot24(t, d) {
   rect(120, 140, 1040, 300, null, 12);
   // seats
   for (let i = 0; i < 4; i++) rect(80 + i * 330, 420, 140, 200, '#2f6db3', 5);
-  man(Object.assign({}, HERO, { x: 760, y: 560, s: 1.4, face: -1, tA: -0.05, lL: [-1.5, 1.4], lR: [-1.45, 1.4], mood: 'tired', hT: 0.35 + Math.sin(t * 1.5) * 0.05, aL: [-0.7, -0.6], aR: [-0.6, -0.5], bag: false }));
+  man(Object.assign({}, HERO, { x: 760, y: 560, s: 1.4, face: -1, tA: -0.05, lL: [1.5, -1.4], lR: [1.45, -1.4], mood: 'tired', hT: 0.35 + Math.sin(t * 1.5) * 0.05, aL: [0.4, 1.1], aR: [0.6, 1.0], bag: false }));
   ctx.save(); ctx.globalAlpha = 0.2; ctx.fillStyle = '#5a8fd6'; ctx.fillRect(0, 0, W, H); ctx.restore();
 }
 function shot25(t, d) {
@@ -953,13 +972,13 @@ function shot27(t, d) {
   street(600 + i * 400, PC, {});
   if (i === 0) {
     const x = 420 + lt * 30;
-    man({ kind: 'extra', x: x - 90, y: standY(600, 1.1), s: 1.1, face: 1, hat: 'hair', hatc: '#999', shirt: '#9a4f4f', pants: '#333', hR: [50, -60], aL: [0.6, -0.3], tA: 0.1, ...walkPose(lt * 6, 0.4) });
+    man({ kind: 'extra', x: x - 90, y: standY(600, 1.1), s: 1.1, face: 1, hat: 'hair', hatc: '#999', shirt: '#9a4f4f', pants: '#333', hR: [50, -60], aL: [0.6, 0.4], tA: 0.1, ...walkPose(BP * Math.PI / 2, 0.4) });
     rect(x - 60, 420, 140, 60, '#8a6a4a', 5); rect(x - 60, 400, 140, 24, '#a07a54', 5); // couch
-    man(Object.assign({}, HERO, { x: x + 130, y: standY(600, 1.1), s: 1.1, face: -1, hR: [50, -60], aL: [0.6, -0.3], tA: 0.1, mood: 'calm', ...walkPose(lt * 6 + 2, 0.4) }));
+    man(Object.assign({}, HERO, { x: x + 130, y: standY(600, 1.1), s: 1.1, face: -1, hR: [50, -60], aL: [0.6, 0.4], tA: 0.1, mood: 'calm', ...walkPose(BP * Math.PI / 2 + Math.PI, 0.4) }));
   } else if (i === 1) {
     const hug = ease(seg(lt, 0.2, 1.0));
-    man({ kind: 'extra', x: 600 + 30 * (1 - hug), y: standY(600, 1.1), s: 1.1, face: 1, hat: 'long', hatc: '#6b3b1f', shirt: '#58a55c', pants: '#334', aL: [lerp(0, -1.4, hug), lerp(0, 1.3, hug)], aR: [lerp(0, -1.6, hug), lerp(0, 1.2, hug)], mood: 'smile' });
-    man({ kind: 'extra', x: 690 - 30 * (1 - hug), y: standY(600, 1.1), s: 1.1, face: -1, hat: 'hair', hatc: '#222', shirt: '#2f6db3', pants: '#334', aL: [lerp(0, -1.4, hug), lerp(0, 1.3, hug)], aR: [lerp(0, -1.6, hug), lerp(0, 1.2, hug)], mood: 'smile' });
+    man({ kind: 'extra', x: 600 + 30 * (1 - hug), y: standY(600, 1.1), s: 1.1, face: 1, hat: 'long', hatc: '#6b3b1f', shirt: '#58a55c', pants: '#334', aL: [lerp(0.1, 1.5, hug), lerp(0.1, 0.9, hug)], aR: [lerp(0.1, 1.3, hug), lerp(0.1, 1.1, hug)], mood: 'smile' });
+    man({ kind: 'extra', x: 690 - 30 * (1 - hug), y: standY(600, 1.1), s: 1.1, face: -1, hat: 'hair', hatc: '#222', shirt: '#2f6db3', pants: '#334', aL: [lerp(0.1, 1.5, hug), lerp(0.1, 0.9, hug)], aR: [lerp(0.1, 1.3, hug), lerp(0.1, 1.1, hug)], mood: 'smile' });
     if (hug > 0.9) text('♥', 645, 330, 40, '#e0362b');
   } else {
     const kk = seg(lt, 0.6, 0.9);
@@ -982,7 +1001,7 @@ function shot29(t, d) {
   street(2380, PC, { wallX: 2600, wallOpts: { graffiti: 1 } });
   const walking = t < 2.2;
   const hx = walking ? lerp(250, 520, t / 2.2) : 520;
-  man(Object.assign({}, HERO, walking ? walkPose(t * 9, 1) : {}, { x: hx, y: standY(600, 1.15), s: 1.15, face: 1, mood: look > 0.5 ? 'calm' : 'neutral', hT: -0.85 * look, lookY: -3 * look }));
+  man(Object.assign({}, HERO, walking ? walkPose(BP * Math.PI / 2, 1) : {}, { x: hx, y: standY(600, 1.15), s: 1.15, face: 1, mood: look > 0.5 ? 'calm' : 'neutral', hT: -0.85 * look, lookY: -3 * look }));
 }
 function shot30(t, d) {
   skyScene(t + 20, { cols: ['#2a78d8', '#8ccaff', '#fff4d8'] });
@@ -1015,24 +1034,61 @@ function shot31(t, d) {
 }
 function shot32(t, d) {
   street(2380, { ...PC, sky1: '#2f7fe0', sky2: '#ffd9a0' }, { wallX: 2600, wallOpts: { graffiti: 1 } });
-  plane(900 + t * 30, 90 - t * 6, 0.25, -0.05, 1 - seg(t, 0, 4));
-  const walkT = Math.max(0, t - 2.4);
-  if (t < 2.4) man(Object.assign({}, HERO, { x: 520, y: standY(600, 1.15), s: 1.15, face: 1, mood: t > 0.8 ? 'calm' : 'neutral', hT: -0.6 * (1 - seg(t, 1.8, 2.4)) }));
+  plane(900 - t * 20, 90 - t * 4, 0.25, -0.05, 1 - seg(t, 0, 6));
+  const w0 = 3.0, w1 = 9.5;
+  if (t < w0) man(Object.assign({}, HERO, { x: 520, y: standY(600, 1.15), s: 1.15, face: 1, mood: t > 1.0 ? 'calm' : 'neutral', hT: -0.6 * (1 - seg(t, 2.2, w0)) }));
   else {
-    // walking away into depth: shrink and rise
-    const p = seg(walkT, 0, 4.5); const s = lerp(1.15, 0.45, p);
-    man(Object.assign({}, HERO, walkPose(walkT * 7, 0.8), { x: lerp(520, 900, p), y: standY(lerp(600, 520, p), s), s, face: 1, mood: 'calm' }));
+    const p = seg(t, w0, w1); const s = lerp(1.15, 0.4, p);
+    man(Object.assign({}, HERO, walkPose(BP * Math.PI / 2, 0.8), { x: lerp(520, 920, p), y: standY(lerp(600, 515, p), s), s, face: 1, mood: 'calm' }));
   }
-  const fa = seg(t, d - 2.2, d - 0.6);
+  const fa = seg(t, 9.0, 11.0);
   fadeBlack(fa);
-  if (fa > 0.6) { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = seg(fa, 0.6, 1) * (1 - seg(t, d - 0.5, d)); text('קורקומיין', W / 2, H / 2 - 30, 64, '#f6e05e'); text('ראשון בבוקר', W / 2, H / 2 + 40, 34, '#fff'); ctx.restore(); }
+  if (fa > 0.6) { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = seg(t, 10.5, 12) * (1 - seg(t, d - 0.8, d - 0.1)); text('קורקומיין', W / 2, H / 2 - 30, 64, '#f6e05e'); text('ראשון בבוקר', W / 2, H / 2 + 40, 34, '#fff'); ctx.restore(); }
+}
+function shotSoloBand(t, d) {
+  soloBg(t, '#f4c21b', '#e23b2e', '#2b5cd6');
+  const i = Math.floor(BP / 8) % 4;
+  const fr = [[1.15, 640, 420], [2.0, 440, 400], [1.9, 640, 430], [1.9, 930, 400]][i];
+  cam(fr[0] + 0.03 * Math.sin(BP * Math.PI / 2), fr[1], fr[2], Math.sin(BP * Math.PI / 4) * 0.04, kick() * 0.9);
+  ctx.fillStyle = '#8e8a82'; ctx.fillRect(-1000, 600, W + 2000, 400); line([[-1000, 600], [W + 1000, 600]], 6);
+  bandAll(t, PC);
+  if (t > d - 0.6) flash(seg(t, d - 0.6, d) * 0.6);
 }
 
 const SHOTS = [
-  [0, 5, shot01], [5, 10, shot02], [10, 15, shot03], [15, 20.5, shot04], [20.5, 26, shot05], [26, 32, shot06], [32, 37.5, shot07], [37.5, 43, shot08],
-  [43, 48, shot09], [48, 53, shot10], [53, 57.5, shot11], [57.5, 63, shot12], [63, 68, shot13], [68, 73, shot14], [73, 79, shot15], [79, 87, shot16],
-  [87, 95, shot17], [95, 104, shot18], [104, 114, shot19], [114, 124, shot20], [124, 135, shot21], [135, 143, shot22], [143, 151, shot23], [151, 159, shot24],
-  [159, 167, shot25], [167, 174, shot26], [174, 181, shot27], [181, 189, shot28], [189, 196, shot29], [196, 204, shot30], [204, 212, shot31], [212, 219.6, shot32],
+  [0, 3.994, shot01, 5],
+  [3.994, 8.173, shot02, 5],
+  [8.173, 12.283, shot03, 5],
+  [12.283, 14.907, shot04, 5.5],
+  [14.907, 24.636, shot05, 5.5],
+  [24.636, 27.26, shot06, 6],
+  [27.26, 30.279, shot07, 5.5],
+  [30.279, 35.921, shot08, 5.5],
+  [35.921, 38.917, shot09, 5],
+  [38.917, 42.284, shot10, 5],
+  [42.284, 48.274, shot11, 4.5],
+  [48.274, 50.527, shot12, 5.5],
+  [50.527, 53.917, shot13, 5],
+  [53.917, 60.279, shot14, 5],
+  [60.279, 61.788, shot15, 6],
+  [61.788, 71.146, shot16, 8],
+  [71.146, 81.665, shot17, 8],
+  [81.665, 92.16, shot18, 9],
+  [92.16, 103.398, shot19, 10],
+  [103.398, 116.146, shot20, 10],
+  [116.146, 128.151, shot21, 11],
+  [128.151, 137.927, shotSoloBand, 0],
+  [137.927, 143.917, shot22, 8],
+  [143.917, 150.28, shot23, 8],
+  [150.28, 155.922, shot24, 8],
+  [155.922, 160.798, shot25, 8],
+  [160.798, 164.537, shot26, 7],
+  [164.537, 170.551, shot27, 7],
+  [170.551, 183.252, shot28, 8],
+  [183.252, 185.504, shot29, 7],
+  [185.504, 195.303, shot30, 8],
+  [195.303, 201.665, shot31, 8],
+  [201.665, 219.6, shot32, 0],
 ];
 
 function init(env) {
@@ -1041,16 +1097,17 @@ function init(env) {
   for (let i = 0; i < env.kick.length; i++) { a = Math.max(env.kick[i] > 0.35 ? env.kick[i] : 0, a * 0.8); b = Math.max(env.snare[i] > 0.35 ? env.snare[i] : 0, b * 0.75); KD[i] = Math.min(1, a); SD[i] = Math.min(1, b); }
   makeTextures();
 }
+function beatPhase(t) { const b = ENV.beats; let lo = 0, hi = b.length - 1; if (t <= b[0]) return (t - b[0]) / 0.3715; if (t >= b[hi]) return hi + (t - b[hi]) / 0.3715; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (b[m] <= t) lo = m; else hi = m; } return lo + (t - b[lo]) / (b[lo + 1] - b[lo]); }
 function render(f) {
-  F = f; T = f / FPS; BOIL = Math.floor(f / 3); K = 0;
+  F = f; T = f / FPS; BOIL = Math.floor(f / 3); K = 0; BP = beatPhase(T);
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
   ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
   let s = SHOTS.find(x => T >= x[0] && T < x[1]) || SHOTS[SHOTS.length - 1];
-  ctx.save(); s[2](T - s[0], s[1] - s[0]); ctx.restore();
+  const od = s[3] || (s[1] - s[0]); ctx.save(); s[2]((T - s[0]) * od / (s[1] - s[0]), od); ctx.restore();
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1;
   overlays();
   // hard-cut punch: tiny white flash on shot start during chorus/solo
-  const lt = T - s[0]; if (lt < 0.08 && s[0] >= 73 && s[0] < 135) flash(0.35);
+  const lt = T - s[0]; if (lt < 0.08 && s[0] >= 60 && s[0] < 138) flash(0.35);
   subtitles();
   panelBorder();
   if (T > 219.0) fadeBlack(1);
