@@ -205,7 +205,7 @@ drumKit = function (x, y, s, t) {
   ell(-28, -26, 24, 11, 0, '#f1ece2'); ell(30, -26, 24, 11, 0, '#f1ece2');
   ctx.fillStyle = '#b81f22'; rr(40, 30, 60, 40, 4); ctx.fill(); ell(70, 30, 30, 11, 0, '#f1ece2');
   circ(0, 40 + k * 2, 58 + k * 4, '#c8261f'); circ(0, 40 + k * 2, 46 + k * 3, '#f4efe5');
-  ctx.fillStyle = '#26283b'; ctx.font = `bold 15px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.direction = 'rtl'; ctx.fillText('קורקומיין', 0, 40 + k * 2);
+  ctx.fillStyle = '#26283b'; ctx.font = `bold 15px ${window.VFONT || FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.direction = 'rtl'; ctx.fillText('קורקומיין', 0, 40 + k * 2);
   ctx.restore();
 };
 soloBg = function (t, a = '#e23b2e', b = '#f4c21b', c2 = '#2b5cd6') {
@@ -228,7 +228,7 @@ subtitles = function () {
     if (T < a || T > b) continue;
     const pop = Math.min(ease(seg(T, a, a + 0.22)), ease(seg(T, b, b - 0.2)));
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.translate(W / 2, 660 + (1 - pop) * 14); ctx.globalAlpha = pop;
-    ctx.font = `bold 34px ${FONT}`; ctx.direction = 'rtl'; const tw = ctx.measureText(s).width;
+    ctx.font = `bold 34px ${window.VFONT || FONT}`; ctx.direction = 'rtl'; const tw = ctx.measureText(s).width;
     ctx.fillStyle = 'rgba(20,22,40,.82)'; rr(-tw / 2 - 26, -30, tw + 52, 60, 30); ctx.fill();
     ctx.fillStyle = '#ffd166'; rr(-tw / 2 - 26, -30, 10, 60, 5); ctx.fill();
     ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(s, 0, 2);
@@ -251,7 +251,7 @@ poster = function (x, y, w, h, who, slogan, rot = 0, tornAmt = 0.2, alpha = 1) {
   head(['singer', 'drummer', 'bassist'][who], r, { front: true, mood: 'smile' });
   ctx.restore();
   ctx.fillStyle = '#ffffff'; ctx.fillRect(x0, y0 + h * .8, w, h * .2); ctx.fillStyle = '#1f56b8'; ctx.fillRect(x0, y0 + h * .8, w, 4);
-  ctx.fillStyle = '#1f56b8'; ctx.font = `bold ${Math.min(w * 0.14, 28)}px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.direction = 'rtl'; ctx.fillText(slogan, 0, y0 + h * 0.9);
+  ctx.fillStyle = '#1f56b8'; ctx.font = `bold ${Math.min(w * 0.14, 28)}px ${window.VFONT || FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.direction = 'rtl'; ctx.fillText(slogan, 0, y0 + h * 0.9);
   ctx.restore();
 };
 cloud = function (x, y, s, fill = '#fff') {

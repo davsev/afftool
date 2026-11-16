@@ -837,11 +837,11 @@ function shot15(t, d) { rooftop(t, PC); cam(1 + t * 0.02, 640, 420, Math.sin(t *
 function shot16(t, d) {
   const dream = Math.min(ease(seg(t, 1.6, 2.4)), 1 - ease(seg(t, 6.2, 7.0)));
   if (dream < 1) {
-    ctx.save(); cam(1.6, 420, 120);
+    ctx.save(); cam(1.35, 470, 300);
     street(1200, { ...PC, sky1: '#2f7fe0', sky2: '#9fd2ff' }, {});
-    ctx.restore(); ctx.save(); cam(1.6, 420, 120);
+    ctx.restore(); ctx.save(); cam(1.35, 470, 300);
     man(Object.assign({}, HERO, { x: 420, y: standY(600, 1.2), s: 1.2, face: 1, mood: 'neutral', hT: -0.9, lookY: -3 }));
-    plane(820 - t * 20, -120, 0.3, -0.05);
+    plane(820 - t * 20, 90, 0.3, -0.05);
     ctx.restore();
   }
   if (dream > 0) {
