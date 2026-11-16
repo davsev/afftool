@@ -81,6 +81,45 @@ const PC = { sky1: '#2f7fe0', sky2: '#9fd2ff', b: ['#e8e2d2', '#f2d27a', '#e6b8a
 const PN = { sky1: '#0f1a36', sky2: '#2c4a86', b: ['#36405a', '#2c3550', '#414b66', '#30394f', '#3b4460'], win: '#f2d36b', walk: '#3f4252', road: '#23252e', wall: '#4b4e5c', acc: '#c4553f', yel: '#f2d36b' };
 const PS = { sky1: '#2a5fc0', sky2: '#ff9a4a', b: ['#c98b6e', '#b77a62', '#d89a74', '#a86d58', '#c4856a'], win: '#ffd27a', walk: '#a8907e', road: '#5a4a44', wall: '#b59b8a', acc: '#e0362b', yel: '#ffcf4a' };
 
+// ---------- kit puppets ----------
+const SPR = {};
+const RIG = { hero: { hx: [100, 267], ny: 150 }, singer: { hx: [116, 263], ny: 180 }, drummer: { hx: [105, 239], ny: 187 }, bassist: { hx: [84, 211], ny: 167 } };
+function loadSprites() {
+  const names = ['hero', 'singer', 'drummer', 'bassist', 'drums', 'poster0', 'poster1', 'poster2', 'logo'];
+  return Promise.all(names.map(n => new Promise(r => { const i = new Image(); i.onload = () => { SPR[n] = i; r(); }; i.onerror = () => r(); i.src = (typeof SPRITE_DATA !== 'undefined' && SPRITE_DATA[n]) || ('kit/' + n + '.png'); })));
+}
+// draws sprite with its hip point (53% down) at (x, y)
+function puppet(kind, x, y, h, o = {}) {
+  const im = SPR[kind]; if (!im) return;
+  const k = h / im.height, w = im.width * k, R = RIG[kind];
+  const hip = h * 0.53;
+  ctx.save(); ctx.translate(x, y + (o.bob || 0)); ctx.rotate(o.rot || 0); ctx.scale((o.flip ? -1 : 1) * (o.sx || 1), o.sy || 1);
+  if (o.clipHip) { ctx.beginPath(); ctx.rect(-w, -hip - 100, w * 2, hip + 100 + (o.clipHip || 0)); ctx.clip(); }
+  const ox = -w / 2, oy = -hip;
+  // shadow outline for comic pop
+  const ny = R.ny * k, hx0 = R.hx[0] * k, hx1 = R.hx[1] * k;
+  ctx.save(); ctx.beginPath();
+  ctx.rect(ox - 60, oy + ny, w + 120, h + 60); ctx.rect(ox - 60, oy - 60, hx0 + 60, ny + 60); ctx.rect(ox + hx1, oy - 60, w - hx1 + 60, ny + 60);
+  ctx.clip(); ctx.drawImage(im, ox, oy, w, h); ctx.restore();
+  ctx.save(); const px = ox + (hx0 + hx1) / 2, py = oy + ny;
+  ctx.translate(px, py); ctx.rotate(o.head || 0); ctx.translate(-px, -py);
+  ctx.beginPath(); ctx.rect(ox + hx0, oy - 60, hx1 - hx0, ny + 60 + 10 * k); ctx.clip();
+  ctx.drawImage(im, ox, oy, w, h); ctx.restore();
+  ctx.restore();
+}
+function puppetFromMan(o) {
+  const s = o.s || 1, h = 240 * s;
+  const sitting = o.lL && o.lL[0] > 1.1;
+  const yy = sitting || (o.tA || 0) < -0.6 ? o.y : o.y + 92 * s - 0.47 * h;
+  const walk = o.lL && !sitting ? o.lL[0] : 0;
+  const lying = (o.tA || 0) < -0.6;
+  puppet(o.kind, o.x, yy, h, {
+    flip: o.face === -1, bob: (o.bob || 0) * s * 1.6, rot: (o.tA || 0) * (lying ? 1 : 0.6) + walk * 0.09 * (o.face === -1 ? -1 : 1),
+    head: clamp(o.hT || 0, -0.32, 0.4), sx: o.sx || 1, clipHip: sitting ? 6 : 0, sy: 1 - Math.abs(walk) * 0.03,
+  });
+  if (o.cup) { const hx = o.x + 40 * s * (o.face === -1 ? -1 : 1), hy = o.y - 40 * s; rect(hx - 8 * s, hy - 20 * s, 16 * s, 22 * s, '#f0ece2', 3); }
+}
+
 // ---------- stickman ----------
 function ik(b, t, l1, l2, bend) {
   const dx = t[0] - b[0], dy = t[1] - b[1]; let d = Math.hypot(dx, dy);
@@ -155,6 +194,7 @@ function head(kind, r, o) {
 }
 
 function man(o) {
+  if (RIG[o.kind] && SPR[o.kind]) { puppetFromMan(o); return; }
   const s = o.s || 1;
   ctx.save(); ctx.translate(o.x, o.y + (o.bob || 0) * s); ctx.scale(s * (o.face || 1) * (o.sx || 1), s * (o.sy || 1));
   const tA = o.tA || 0, TL = 60, UA = 33, LA = 33, TH = 46, SH = 46, HR = 20;
@@ -215,6 +255,17 @@ function instrument(o) {
   ctx.restore();
 }
 function bandPose(kind, t, x, y, s, extra = {}) {
+  if (SPR[kind]) {
+    const e = rms(), k = kick(), sn = snare();
+    const sc = kind === 'drummer' ? 1.25 : 1.0;
+    puppet(kind, x, y, 196 * s * sc, {
+      bob: -k * 7 * s - (kind === 'drummer' ? sn * 5 * s : 0),
+      rot: Math.sin(BP * Math.PI * (kind === 'bassist' ? 0.5 : 1)) * 0.035 * (0.5 + e),
+      head: (extra.hT !== undefined ? extra.hT * 0.6 : 0) + Math.sin(BP * Math.PI) * 0.07 * (0.5 + e) + k * 0.08,
+      sy: 1 - k * 0.025, flip: extra.face === -1,
+    });
+    return;
+  }
   const e = rms(), k = kick(), sn = snare();
   const o = Object.assign({ kind, x, y, s, front: true, face: 1, mood: 'neutral' }, extra);
   if (kind === 'singer' || kind === 'bassist') {
@@ -241,6 +292,7 @@ function bandPose(kind, t, x, y, s, extra = {}) {
 }
 function drumKit(x, y, s, t) {
   const k = kick(), sn = snare();
+  if (SPR.drums) { const im = SPR.drums, w = 330 * s * (1 + k * 0.03), h = w * im.height / im.width; ctx.drawImage(im, x - w / 2, y + 105 * s - h, w, h); return; }
   ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
   line([[-110, -40], [-110, 60]], 4); line([[115, -70], [115, 60]], 4);
   ell(-110, -42 - (sn > .5 ? 3 : 0), 34, 7, 0.1 + sn * .2, '#f2c418', 4); // hihat
@@ -248,7 +300,7 @@ function drumKit(x, y, s, t) {
   ell(-62, 8, 30, 14, 0, '#e8e2d2', 4); rect(-92, 8, 60, 22, '#c22a24', 4); // snare
   ell(-28, -26, 24, 12, 0, '#e8e2d2', 4); ell(30, -26, 24, 12, 0, '#e8e2d2', 4);
   circ(0, 40 + k * 2, 58 + k * 4, '#c22a24', 6); circ(0, 40 + k * 2, 44 + k * 3, '#efe7d6', 4);
-  text('קורקומיין', 0, 40 + k * 2, 15, INK);
+  
   ell(70, 30, 30, 14, 0, '#e8e2d2', 4); rect(40, 30, 60, 40, '#c22a24', 4);
   ctx.restore();
 }
@@ -334,17 +386,19 @@ function poster(x, y, w, h, who, slogan, rot = 0, tornAmt = 0.2, alpha = 1) {
   for (let i = n; i >= 0; i--) pts.push([x0 + w * i / n, y0 + h - (h1(i * 3 + who) < tornAmt ? 18 * h1(i + 4) : 0)]);
   poly(pts, '#f5f3ec', 3);
   ctx.save(); ctx.beginPath(); ctx.rect(x0, y0, w, h); ctx.clip();
-  ctx.fillStyle = '#1f56b8'; ctx.fillRect(x0, y0, w, h * 0.1); ctx.fillRect(x0, y0 + h * 0.78, w, h * 0.22);
+  ctx.fillStyle = '#1f56b8'; ctx.fillRect(x0, y0, w, h * 0.1); ctx.fillRect(x0, y0 + h * 0.78, w, h * 0.22); ctx.fillStyle = '#c22a24'; ctx.fillRect(x0, y0 + h * 0.78, w, 5);
   ctx.fillStyle = '#e7eef9'; ctx.fillRect(x0, y0 + h * .1, w, h * .68);
   // star-ish stripe
   ctx.fillStyle = '#1f56b8'; ctx.fillRect(x0, y0 + h * .12, w, 3);
-  // face
+  if (SPR['poster' + who]) { ctx.drawImage(SPR['poster' + who], x0, y0, w, h * 0.8); }
+  else {
   ctx.save(); ctx.translate(0, y0 + h * 0.46); const r = w * 0.26;
   line([[-r * 1.5, h * .3], [-r * .6, r * 1.2], [r * .6, r * 1.2], [r * 1.5, h * .3]], 4, INK);
   ctx.fillStyle = '#2c2c2c'; ctx.beginPath(); ctx.moveTo(-r * 1.5, h * .32); ctx.lineTo(-r * .6, r * 1.2); ctx.lineTo(r * .6, r * 1.2); ctx.lineTo(r * 1.5, h * .32); ctx.fill();
   poly([[-r * .25, r * 1.2], [0, r * 1.7], [r * .25, r * 1.2]], '#fff', 2);
   head(['singer', 'drummer', 'bassist'][who], r, { front: true, mood: 'smile' });
   ctx.restore();
+  }
   text(slogan, 0, y0 + h * 0.89, Math.min(w * 0.15, 30), '#fff', { outline: 0 });
   ctx.restore();
   // graffiti scratch on poster
@@ -803,7 +857,7 @@ function shot16(t, d) {
     ell(820, 330, 222, 272, 0, null, 6);
     // seat + hero sitting looking out
     rect(170, 220, 160, 420, '#2f6db3', 6);
-    man(Object.assign({}, HERO, { x: 360, y: 470, s: 1.5, face: 1, tA: 0.1, lL: [1.5, -1.4], lR: [1.45, -1.4], mood: 'calm', hT: 0.05, aL: [0.4, 1.1], aR: [0.6, 1.0], bag: false }));
+    man(Object.assign({}, HERO, { x: 380, y: 520, s: 2.1, face: 1, tA: 0.1, lL: [1.5, -1.4], lR: [1.45, -1.4], mood: 'calm', hT: 0.05, aL: [0.4, 1.1], aR: [0.6, 1.0], bag: false }));
     ctx.restore();
   }
 }
@@ -1043,7 +1097,7 @@ function shot32(t, d) {
   }
   const fa = seg(t, 9.0, 11.0);
   fadeBlack(fa);
-  if (fa > 0.6) { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = seg(t, 10.5, 12) * (1 - seg(t, d - 0.8, d - 0.1)); text('קורקומיין', W / 2, H / 2 - 30, 64, '#f6e05e'); text('ראשון בבוקר', W / 2, H / 2 + 40, 34, '#fff'); ctx.restore(); }
+  if (fa > 0.6) { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = seg(t, 10.5, 12) * (1 - seg(t, d - 0.8, d - 0.1)); if (SPR.logo) { const lw = 620, lh = lw * SPR.logo.height / SPR.logo.width; ctx.drawImage(SPR.logo, W / 2 - lw / 2, H / 2 - lh / 2 - 40, lw, lh); } else text('קורקומיין', W / 2, H / 2 - 30, 64, '#f6e05e'); text('ראשון בבוקר', W / 2, H / 2 + 90, 40, '#fff'); ctx.restore(); }
 }
 function shotSoloBand(t, d) {
   soloBg(t, '#f4c21b', '#e23b2e', '#2b5cd6');
@@ -1096,6 +1150,7 @@ function init(env) {
   KD = []; SD = []; let a = 0, b = 0;
   for (let i = 0; i < env.kick.length; i++) { a = Math.max(env.kick[i] > 0.35 ? env.kick[i] : 0, a * 0.8); b = Math.max(env.snare[i] > 0.35 ? env.snare[i] : 0, b * 0.75); KD[i] = Math.min(1, a); SD[i] = Math.min(1, b); }
   makeTextures();
+  return loadSprites();
 }
 function beatPhase(t) { const b = ENV.beats; let lo = 0, hi = b.length - 1; if (t <= b[0]) return (t - b[0]) / 0.3715; if (t >= b[hi]) return hi + (t - b[hi]) / 0.3715; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (b[m] <= t) lo = m; else hi = m; } return lo + (t - b[lo]) / (b[lo + 1] - b[lo]); }
 function render(f) {
